@@ -15,7 +15,7 @@ def load_dataset(data, data_dir, split, download):
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
-    if data[:5] == 'cifar':
+    if data[:5].lower() == 'cifar':
         cifar_sets = {
             "cifar10": CIFAR10,
             "cifar100": CIFAR100,

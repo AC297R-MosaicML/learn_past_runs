@@ -54,11 +54,11 @@ parser.add_argument('--half', dest='half', action='store_true',
 parser.add_argument('--save-dir', dest='save_dir',
                     help='The directory used to save the trained models',
                     default='save_temp', type=str)
-parser.add_argument('--save-freq', dest='save_every',
+parser.add_argument('--save-freq', dest='save_freq',
                     help='Saves checkpoints at every specified number of epochs',
                     type=int, default=10)
-parser.add_argument('--write_log', type=bool, default=True,  help='if write log')
-parser.add_argument('--use_cuda', type=bool,  default=False, help='if use cuda')
+parser.add_argument('--write-log', type=bool, default=True,  help='if write log')
+parser.add_argument('--use-cuda', type=bool,  default=False, help='if use cuda')
 best_prec1 = 0
 
 
@@ -70,7 +70,11 @@ def main(args, best_prec1):
 
     device = torch.device("cuda" if args.use_cuda else "cpu")
 
-    model = torch.nn.DataParallel(models.__dict__[args.arch]())
+    if args.data.lower() == 'cifar10':
+        model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=10))
+    elif args.data.lower() == 'cifar100':
+        model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=100))
+
     model.to(device)
 
     # optionally resume from a checkpoint
@@ -132,16 +136,18 @@ def main(args, best_prec1):
         # remember best prec@1 and save checkpoint
         best_prec1 = max(acc, best_prec1)
 
-        if epoch > 0 and epoch % args.save_every == 0:
-            log_tmp = 'Train Epoch: {} Loss: {:.6f} Total Training time: {:.2f} Current Accuracy: {:.3f}'.format(
-                epoch, train_loss, tradeoff.train_time,  acc)
-            with open(os.path.join(args.save_dir,"{}.txt".format(args.file_name)), "a") as log:
-                log.write('{}\n'.format(log_tmp))
+        log_tmp = 'Train Epoch: {} Loss: {:.6f} Total Training time: {:.2f} Current Accuracy: {:.3f}'.format(
+            epoch, train_loss, tradeoff.train_time,  acc)
+        with open(os.path.join(args.save_dir,"{}.txt".format(args.file_name)), "a") as log:
+            log.write('{}\n'.format(log_tmp))
+        print(log_tmp)
+
+        if epoch > 0 and epoch % args.save_freq == 0:
             torch.save({
-                'epoch': epoch + 1,
+                'epoch': epoch,
                 'state_dict': model.state_dict(),
                 'best_prec1': best_prec1,
-            }, filename=os.path.join(args.save_dir, 'epoch_{}.th'.format(epoch+1)))
+            }, filename=os.path.join(args.save_dir, 'epoch_{}.th'.format(epoch)))
 
 
 if __name__ == '__main__':
