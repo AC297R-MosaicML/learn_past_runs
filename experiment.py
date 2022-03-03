@@ -1,7 +1,13 @@
+'''
+We refer to [1] for parsing arguments and main()
+
+Reference:
+[1] https://github.com/akamaster/pytorch_resnet_cifar10/blob/master/trainer.py
+'''
+
+
 import argparse
 import os
-import shutil
-import time
 
 import torch
 import torch.nn as nn
