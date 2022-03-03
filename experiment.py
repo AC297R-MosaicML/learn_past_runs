@@ -21,7 +21,7 @@ from utils import Tradeoff
 parser = argparse.ArgumentParser(description='Propert ResNets for CIFAR10 in pytorch')
 parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet56',
                     help='model architecture: resnet56 |')
-parser.add_argument('--data', default='CIFAR10',
+parser.add_argument('--data', default='CIFAR100',
                     help='Dataset: CIFAR10 | CIFAR100')
 parser.add_argument('--data_dir', default='./data',
                     help='The directory of the dataset')
