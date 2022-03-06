@@ -47,8 +47,8 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
-parser.add_argument('--print-freq', '-p', default=50, type=int,
-                    metavar='N', help='print frequency (default: 50)')
+parser.add_argument('--print-freq', '-p', default=100, type=int,
+                    metavar='N', help='print frequency (default: 100)')
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
@@ -63,8 +63,8 @@ parser.add_argument('--save-dir', dest='save_dir',
 parser.add_argument('--save-freq', dest='save_freq',
                     help='Saves checkpoints at every specified number of epochs',
                     type=int, default=10)
-parser.add_argument('--write-log', type=bool, default=True,  help='if write log')
-parser.add_argument('--use-cuda', type=bool,  default=False, help='if use cuda')
+parser.add_argument('--log-name', default='default_log',  help='log file name')
+parser.add_argument('--use-cuda', type=bool,  default=True, help='if use cuda')
 best_prec1 = 0
 
 
@@ -99,17 +99,17 @@ def main(args, best_prec1):
     cudnn.benchmark = True
 
     train_loader = torch.utils.data.DataLoader(
-        load_dataset(args.data, args.data_dir, 'train', args.download),
+        load_dataset(args.data.lower(), args.data_dir, 'train', args.download),
         batch_size=args.batch_size, shuffle=True,
         num_workers=args.workers, pin_memory=True)
 
     val_loader = torch.utils.data.DataLoader(
-        load_dataset(args.data, args.data_dir, 'test', args.download),
+        load_dataset(args.data.lower(), args.data_dir, 'test', args.download),
         batch_size=128, shuffle=False,
         num_workers=args.workers, pin_memory=True)
 
     # define loss function (criterion) and optimizer
-    criterion = nn.CrossEntropyLoss().cuda()
+    criterion = nn.CrossEntropyLoss().to(device)
 
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
@@ -131,12 +131,12 @@ def main(args, best_prec1):
         # train for one epoch
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
 
-        train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch)
+        train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq)
 
         lr_scheduler.step()
 
         # evaluate on validation set
-        test_loss, acc = validate(val_loader, model, criterion)
+        test_loss, acc = validate(val_loader, model, criterion, device)
         tradeoff.update(train_time, acc)
 
         # remember best prec@1 and save checkpoint
@@ -144,7 +144,7 @@ def main(args, best_prec1):
 
         log_tmp = 'Train Epoch: {} Loss: {:.6f} Total Training time: {:.2f} Current Accuracy: {:.3f}'.format(
             epoch, train_loss, tradeoff.train_time,  acc)
-        with open(os.path.join(args.save_dir,"{}.txt".format(args.file_name)), "a") as log:
+        with open(os.path.join(args.save_dir,"{}.txt".format(args.log_name)), "a") as log:
             log.write('{}\n'.format(log_tmp))
         print(log_tmp)
 
