@@ -99,6 +99,15 @@ def main(args, best_prec1):
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
 
+    
+    # load one teacher model
+    # TO DO: support loading several teachers
+    if args.teacher:
+        teacher_model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
+        checkpoint = torch.load(args.teacher)
+        teacher_model.load_state_dict(checkpoint['state_dict'])
+
+
     cudnn.benchmark = True
 
     train_loader = torch.utils.data.DataLoader(
@@ -134,7 +143,8 @@ def main(args, best_prec1):
         # train for one epoch
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
 
-        train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq)
+        # TO DO: import and define some criterions
+        train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model)
 
         lr_scheduler.step()
 
