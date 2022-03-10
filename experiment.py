@@ -51,6 +51,8 @@ parser.add_argument('--print-freq', '-p', default=100, type=int,
                     metavar='N', help='print frequency (default: 100)')
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
+parser.add_argument('--teacher', default='', type=str, metavar='PATH',
+                    help='path to the teacher model (default: none)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true',
@@ -77,10 +79,11 @@ def main(args, best_prec1):
     device = torch.device("cuda" if args.use_cuda else "cpu")
 
     if args.data.lower() == 'cifar10':
-        model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=10))
+        num_classes = 10
     elif args.data.lower() == 'cifar100':
-        model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=100))
+        num_classes = 100
 
+    model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
     model.to(device)
 
     # optionally resume from a checkpoint
