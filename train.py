@@ -26,10 +26,11 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
 
         # TO DO: further check and debugging
         s_out = model(data)
-        t_out = t_model(data)
+        if t_model:
+            t_out = t_model(data)
 
         cls_loss = criterion(s_out, target)
-        st_loss = st_criterion(s_out, t_out)
+        st_loss = st_criterion(s_out, t_out) if st_criterion else 0
 
         loss = cls_loss + st_loss
         loss.backward()

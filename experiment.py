@@ -122,6 +122,7 @@ def main(args, best_prec1):
 
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().to(device)
+    st_criterion = nn.CrossEntropyLoss().to(device)
 
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
