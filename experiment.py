@@ -64,9 +64,9 @@ parser.add_argument('--save-dir', dest='save_dir',
                     default='save_temp', type=str)
 parser.add_argument('--save-freq', dest='save_freq',
                     help='Saves checkpoints at every specified number of epochs',
-                    type=int, default=10)
+                    type=int, default=20)
 parser.add_argument('--log-name', default='default_log',  help='log file name')
-parser.add_argument('--use-cuda', type=bool,  default=False, help='if use cuda') # Maybe change back to default=True later
+parser.add_argument('--use-cuda', type=bool,  default=True, help='if use cuda') # Maybe change back to default=True later
 best_prec1 = 0
 
 
@@ -106,7 +106,7 @@ def main(args, best_prec1):
         teacher_model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
         checkpoint = torch.load(args.teacher)
         teacher_model.load_state_dict(checkpoint['state_dict'])
-        st_criterion = nn.CrossEntropyLoss().to(device)
+        st_criterion = nn.MSELoss().to(device)
     else:
         teacher_model = None
         st_criterion = None
@@ -131,10 +131,10 @@ def main(args, best_prec1):
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
 
-    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
-                                                        milestones=[100, 150], 
-                                                        last_epoch=args.start_epoch - 1)
-
+#     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
+#                                                         milestones=[100, 150], 
+#                                                         last_epoch=args.start_epoch - 1)
+    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.975)
 
     if args.evaluate:
         validate(val_loader, model, criterion)
@@ -170,7 +170,7 @@ def main(args, best_prec1):
                 'epoch': epoch,
                 'state_dict': model.state_dict(),
                 'best_prec1': best_prec1,
-            }, filename=os.path.join(args.save_dir, 'epoch_{}.th'.format(epoch)))
+            }, os.path.join(args.save_dir, 'epoch_{}.th'.format(epoch)))
 
 
 if __name__ == '__main__':
