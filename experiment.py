@@ -66,7 +66,7 @@ parser.add_argument('--save-freq', dest='save_freq',
                     help='Saves checkpoints at every specified number of epochs',
                     type=int, default=10)
 parser.add_argument('--log-name', default='default_log',  help='log file name')
-parser.add_argument('--use-cuda', type=bool,  default=True, help='if use cuda')
+parser.add_argument('--use-cuda', type=bool,  default=False, help='if use cuda') # Maybe change back to default=True later
 best_prec1 = 0
 
 
@@ -106,6 +106,10 @@ def main(args, best_prec1):
         teacher_model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
         checkpoint = torch.load(args.teacher)
         teacher_model.load_state_dict(checkpoint['state_dict'])
+        st_criterion = nn.CrossEntropyLoss().to(device)
+    else:
+        teacher_model = None
+        st_criterion = None
 
 
     cudnn.benchmark = True
@@ -122,8 +126,7 @@ def main(args, best_prec1):
 
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().to(device)
-    st_criterion = nn.CrossEntropyLoss().to(device)
-
+    
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)

@@ -36,10 +36,10 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
         loss.backward()
         optimizer.step()
 
-        if batch_idx % print_freq == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.item()))
+        logger_end = '\n' if batch_idx % print_freq == print_freq-1 else '\r'
+        print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+              epoch, batch_idx * len(data), len(train_loader.dataset),
+              100. * batch_idx / len(train_loader), loss.item()), end=logger_end)
 
     end = time.time()
 
