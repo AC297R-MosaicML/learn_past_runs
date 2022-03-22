@@ -57,8 +57,6 @@ parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true',
                     help='use pre-trained model')
-parser.add_argument('--half', dest='half', action='store_true',
-                    help='use half-precision(16-bit) ')
 parser.add_argument('--save-dir', dest='save_dir',
                     help='The directory used to save the trained models',
                     default='save_temp', type=str)
@@ -68,6 +66,7 @@ parser.add_argument('--save-freq', dest='save_freq',
 parser.add_argument('--log-name', default='default_log',  help='log file name')
 parser.add_argument('--use-cuda', type=bool,  default=True, help='if use cuda') # Maybe change back to default=True later
 parser.add_argument('--lambda_kd', type=float, default=1.0, help='trade-off parameter for kd loss')
+parser.add_argument('--kd_epochs_first', type=int, default=200, help='use kd for the first several epochs')
 best_prec1 = 0
 
 
@@ -160,8 +159,10 @@ def main(args, best_prec1):
         # train for one epoch
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
 
-        # TO DO: import and define some criterions
-        train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model, args.lambda_kd)
+        if epoch < args.kd_epochs_first:
+            train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model, args.lambda_kd)
+        else:
+            train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq)
 
         lr_scheduler.step()
 
