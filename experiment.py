@@ -67,6 +67,7 @@ parser.add_argument('--save-freq', dest='save_freq',
                     type=int, default=20)
 parser.add_argument('--log-name', default='default_log',  help='log file name')
 parser.add_argument('--use-cuda', type=bool,  default=True, help='if use cuda') # Maybe change back to default=True later
+parser.add_argument('--lambda_kd', type=float, default=1.0, help='trade-off parameter for kd loss')
 best_prec1 = 0
 
 
@@ -101,12 +102,24 @@ def main(args, best_prec1):
 
     
     # load one teacher model
-    # TO DO: support loading several teachers
     if args.teacher:
-        teacher_model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
-        checkpoint = torch.load(args.teacher)
-        teacher_model.load_state_dict(checkpoint['state_dict'])
-        st_criterion = nn.MSELoss().to(device)
+        # is a path, one teacher
+        if os.path.isfile(args.teacher):
+            teacher_model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
+            checkpoint = torch.load(args.teacher)
+            teacher_model.load_state_dict(checkpoint['state_dict'])
+            teacher_model = [teacher_model]
+            st_criterion = nn.MSELoss().to(device)
+        # is a folder, loading several teachers
+        else:
+            teacher_model = []
+            st_criterion = nn.MSELoss().to(device)
+            paths = os.listdir(args.teacher)
+            for path in paths:
+                one_model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
+                checkpoint = torch.load(os.path.join(args.teacher, path))
+                one_model.load_state_dict(checkpoint['state_dict'])
+                teacher_model.append(one_model)
     else:
         teacher_model = None
         st_criterion = None
@@ -148,7 +161,7 @@ def main(args, best_prec1):
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
 
         # TO DO: import and define some criterions
-        train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model)
+        train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model, args.lambda_kd)
 
         lr_scheduler.step()
 
@@ -169,6 +182,7 @@ def main(args, best_prec1):
             torch.save({
                 'epoch': epoch,
                 'state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
                 'best_prec1': best_prec1,
             }, os.path.join(args.save_dir, 'epoch_{}.th'.format(epoch)))
 

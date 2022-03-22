@@ -13,7 +13,7 @@ from metrics import *
 from utils import *
 
 
-def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_model=None):
+def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1):
 
     model.train()
 
@@ -24,17 +24,16 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
         
         optimizer.zero_grad()
 
-        # TO DO: further check and debugging
         s_out = model(data)
-        if t_model:
-            for param in t_model.parameters():
-                param.requires_grad = False
-            t_out = t_model(data)
-
         cls_loss = criterion(s_out, target)
-        st_loss = st_criterion(s_out, t_out) if st_criterion else 0
-
-        loss = cls_loss + st_loss
+        loss = cls_loss
+        
+        if t_models:
+            for t_model in t_models:
+                for param in t_model.parameters():
+                    param.requires_grad = False
+                loss += st_criterion(s_out, t_model(data)) * lambda_kd
+                
         loss.backward()
         optimizer.step()
 
