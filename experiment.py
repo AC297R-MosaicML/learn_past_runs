@@ -67,6 +67,7 @@ parser.add_argument('--log-name', default='default_log',  help='log file name')
 parser.add_argument('--use-cuda', type=bool,  default=True, help='if use cuda') # Maybe change back to default=True later
 parser.add_argument('--lambda_kd', type=float, default=1.0, help='trade-off parameter for kd loss')
 parser.add_argument('--kd_epochs_first', type=int, default=200, help='use kd for the first several epochs')
+parser.add_argument('--kd_epochs_every', type=int, default=1, help='use kd every x epochs')
 best_prec1 = 0
 
 
@@ -159,7 +160,7 @@ def main(args, best_prec1):
         # train for one epoch
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
 
-        if epoch < args.kd_epochs_first:
+        if epoch < args.kd_epochs_first and epoch % args.kd_epochs_every == 0:
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model, args.lambda_kd)
         else:
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq)
