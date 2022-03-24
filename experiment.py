@@ -148,6 +148,7 @@ def main(args, best_prec1):
 #                                                         milestones=[100, 150], 
 #                                                         last_epoch=args.start_epoch - 1)
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.975)
+#     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
 
     if args.evaluate:
         validate(val_loader, model, criterion)
