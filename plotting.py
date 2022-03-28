@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.cm import get_cmap
 
@@ -15,6 +16,38 @@ def read_log(path):
 def savefig(filename):
     plt.savefig(
         filename + "." + FORMAT, format=FORMAT, dpi=1200, bbox_inches="tight")
+
+
+def get_avg(log_path, log_num):
+    '''
+    Calculating the averaged runing results
+    '''
+    avg_epoch = None
+    avg_acc = None
+
+    for i in range(1,1+log_num):
+        data = read_log(f'{log_path}_{i}/{log_path}_{i}.txt')
+        if avg_epoch is None:
+            avg_epoch = data.epoch
+        if avg_acc is None:
+            avg_acc = data.acc
+        else:
+            avg_acc += data.acc
+
+    avg_acc /= log_num
+    avg = pd.DataFrame({'epoch':avg_epoch, 'acc': avg_acc })
+    
+    return avg
+
+
+def get_epoch(data, threshold):
+    '''
+    Calculating when the model's accuracy reach the threshold
+    '''
+    vals = data[data['acc']>=threshold].epoch.values
+    if len(vals)!=0:
+        return vals[0]
+    return 'Never'
 
 
 def plot_tradeoff(paths, filename):
