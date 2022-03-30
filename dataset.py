@@ -10,7 +10,7 @@ from torchvision.datasets import CIFAR10, CIFAR100
 
 
 def load_dataset(data, data_dir, split, download):
-    assert split in ["train", "test"], f"unknown split: {split}"
+    assert split in ["train", "test", "eval_train"], f"unknown split: {split}"
 
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
@@ -28,8 +28,13 @@ def load_dataset(data, data_dir, split, download):
                     transforms.ToTensor(),
                     normalize,
                 ]), download=download)
-        else:
+        elif split == 'test':
             return cifar_sets[data](root=data_dir, train=False, transform=transforms.Compose([
+                    transforms.ToTensor(),
+                    normalize,
+                ]), download=download)
+        else:
+            return cifar_sets[data](root=data_dir, train=True, transform=transforms.Compose([
                     transforms.ToTensor(),
                     normalize,
                 ]), download=download)
