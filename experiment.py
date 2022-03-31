@@ -1,6 +1,5 @@
 '''
 We refer to [1] for parsing arguments and main()
-
 Reference:
 [1] https://github.com/akamaster/pytorch_resnet_cifar10/blob/master/trainer.py
 '''
@@ -53,6 +52,7 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('--teacher', default='', type=str, metavar='PATH',
                     help='path to the teacher model (default: none)')
+parser.add_argument('--teacher_num', default=5, type=int, help='teacher_num')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true',
@@ -114,12 +114,14 @@ def main(args, best_prec1):
         else:
             teacher_model = []
             st_criterion = nn.MSELoss().to(device)
-            paths = os.listdir(args.teacher)
-            for path in paths:
-                one_model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
-                checkpoint = torch.load(os.path.join(args.teacher, path))
-                one_model.load_state_dict(checkpoint['state_dict'])
-                teacher_model.append(one_model)
+            paths = sorted(os.listdir(args.teacher))
+            for i, path in enumerate(paths):
+                if i < args.teacher_num:
+                    one_model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
+                    checkpoint = torch.load(os.path.join(args.teacher, path))
+                    one_model.load_state_dict(checkpoint['state_dict'])
+                    teacher_model.append(one_model)
+            print('Using {} teachers, they are {}'.format(len(teacher_model), paths[:args.teacher_num]))
     else:
         teacher_model = None
         st_criterion = None
@@ -166,8 +168,12 @@ def main(args, best_prec1):
         # train for one epoch
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
 
+        # KD loss decay
+        kd_loss_weight = 95**epoch
+
         if epoch <= args.kd_epochs_first and epoch % args.kd_epochs_every == 0:
-            train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model, args.lambda_kd)
+            train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, 
+                                           st_criterion, teacher_model, args.lambda_kd, kd_loss_weight)
         else:
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq)
 

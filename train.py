@@ -13,7 +13,8 @@ from metrics import *
 from utils import *
 
 
-def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1):
+def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
+          st_criterion=None, t_models=None, lambda_kd=1, kd_loss_weight=1):
 
     model.train()
 
