@@ -10,7 +10,7 @@ from metrics import *
 from utils import *
 
 
-def validate(val_loader, model, criterion, device):
+def validate(val_loader, model, criterion, set_name, device):
 
     model.eval()
     test_loss = 0
@@ -27,8 +27,8 @@ def validate(val_loader, model, criterion, device):
     test_loss /= len(val_loader.dataset)
     acc = correct.float() / len(val_loader.dataset)
 
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        test_loss, correct, len(val_loader.dataset),
+    print('Evaluate on {}: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
+        set_name, test_loss, correct, len(val_loader.dataset),
         100. * acc))
 
     return test_loss, acc
