@@ -53,6 +53,7 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('--teacher', default='', type=str, metavar='PATH',
                     help='path to the teacher model (default: none)')
+parser.add_argument('--teacher_num', default=5, type=int, help='teacher_num')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true',
@@ -114,12 +115,14 @@ def main(args, best_prec1):
         else:
             teacher_model = []
             st_criterion = nn.MSELoss().to(device)
-            paths = os.listdir(args.teacher)
-            for path in paths:
-                one_model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
-                checkpoint = torch.load(os.path.join(args.teacher, path))
-                one_model.load_state_dict(checkpoint['state_dict'])
-                teacher_model.append(one_model)
+            paths = sorted(os.listdir(args.teacher))
+            for i, path in enumerate(paths):
+                if i < args.teacher_num:
+                    one_model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
+                    checkpoint = torch.load(os.path.join(args.teacher, path))
+                    one_model.load_state_dict(checkpoint['state_dict'])
+                    teacher_model.append(one_model)
+            print('Using {} teachers, they are {}'.format(len(teacher_model), paths[:args.teacher_num]))
     else:
         teacher_model = None
         st_criterion = None
