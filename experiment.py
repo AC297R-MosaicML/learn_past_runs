@@ -169,7 +169,7 @@ def main(args, best_prec1):
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
 
         # KD loss decay
-        kd_loss_weight = 95**epoch
+        kd_loss_weight = 0.95**epoch
 
         if epoch <= args.kd_epochs_first and epoch % args.kd_epochs_every == 0:
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, 

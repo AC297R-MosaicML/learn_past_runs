@@ -27,7 +27,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq,
 
         s_out = model(data)
         cls_loss = criterion(s_out, target)
-        loss = cls_loss
+        # loss = cls_loss
         
         if t_models:
             t_outputs = None
@@ -40,7 +40,8 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq,
                 else:
                     t_outputs += t_model(data) * frac
 #                 loss += st_criterion(s_out, t_model(data)) * lambda_kd
-            loss += st_criterion(s_out, t_outputs) * lambda_kd
+            loss = (kd_loss_weight*st_criterion(s_out, t_outputs) + 
+                    (1-kd_loss_weight)*cls_loss)
     
         loss.backward()
         optimizer.step()
