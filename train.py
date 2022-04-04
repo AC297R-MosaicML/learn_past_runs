@@ -11,9 +11,9 @@ import torchvision.datasets as datasets
 from models import *
 from metrics import *
 from utils import *
+from random import choice
 
-
-def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1):
+def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1, avg_t=True):
 
     model.train()
 
@@ -30,15 +30,21 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
         
         if t_models:
             t_outputs = None
-            frac = 1/len(t_models)
-            for t_model in t_models:
-                for param in t_model.parameters():
+            if avg_t:
+                frac = 1/len(t_models)
+                for t_model in t_models:
+                    for param in t_model.parameters():
+                        param.requires_grad = False
+                    if t_outputs is None:
+                        t_outputs = t_model(data) * frac
+                    else:
+                        t_outputs += t_model(data) * frac
+    #                 loss += st_criterion(s_out, t_model(data)) * lambda_kd
+            else:
+                rand_t_model = choice(t_models)
+                for param in rand_t_model.parameters():
                     param.requires_grad = False
-                if t_outputs is None:
-                    t_outputs = t_model(data) * frac
-                else:
-                    t_outputs += t_model(data) * frac
-#                 loss += st_criterion(s_out, t_model(data)) * lambda_kd
+                t_outputs = rand_t_model(data)
             loss += st_criterion(s_out, t_outputs) * lambda_kd
     
         loss.backward()
