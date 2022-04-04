@@ -53,6 +53,7 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('--teacher', default='', type=str, metavar='PATH',
                     help='path to the teacher model (default: none)')
+parser.add_argument('--teacher_num', default=5, type=int, help='teacher_num')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true',
@@ -114,12 +115,14 @@ def main(args, best_prec1):
         else:
             teacher_model = []
             st_criterion = nn.MSELoss().to(device)
-            paths = os.listdir(args.teacher)
-            for path in paths:
-                one_model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
-                checkpoint = torch.load(os.path.join(args.teacher, path))
-                one_model.load_state_dict(checkpoint['state_dict'])
-                teacher_model.append(one_model)
+            paths = sorted(os.listdir(args.teacher))
+            for i, path in enumerate(paths):
+                if i < args.teacher_num:
+                    one_model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
+                    checkpoint = torch.load(os.path.join(args.teacher, path))
+                    one_model.load_state_dict(checkpoint['state_dict'])
+                    teacher_model.append(one_model)
+            print('Using {} teachers, they are {}'.format(len(teacher_model), paths[:args.teacher_num]))
     else:
         teacher_model = None
         st_criterion = None
@@ -134,6 +137,11 @@ def main(args, best_prec1):
 
     val_loader = torch.utils.data.DataLoader(
         load_dataset(args.data.lower(), args.data_dir, 'test', args.download),
+        batch_size=128, shuffle=False,
+        num_workers=args.workers, pin_memory=True)
+    
+    eval_train = torch.utils.data.DataLoader(
+        load_dataset(args.data.lower(), args.data_dir, 'eval_train', args.download),
         batch_size=128, shuffle=False,
         num_workers=args.workers, pin_memory=True)
 
@@ -168,17 +176,18 @@ def main(args, best_prec1):
 
         lr_scheduler.step()
 
-        # evaluate on validation set
-        test_loss, acc = validate(val_loader, model, criterion, device)
-        tradeoff.update(train_time, acc)
+        # evaluate
+        test_loss, test_acc = validate(val_loader, model, criterion, 'test data', device)
+        eval_train_loss, eval_train_acc = validate(eval_train, model, criterion, 'train data', device)
+        tradeoff.update(train_time, test_acc)
 
         # remember best prec@1 and save checkpoint
-        best_prec1 = max(acc, best_prec1)
+        best_prec1 = max(test_acc, best_prec1)
 
-        log_tmp = 'Train Epoch: {} Loss: {:.6f} Total Training time: {:.2f} Current Accuracy: {:.3f}'.format(
-            epoch, train_loss, tradeoff.train_time,  acc)
+        log_tmp = 'Train Epoch: {} Loss: {:.6f} Total Training time: {:.2f} Test Accuracy: {:.3f} Train Accuracy: {:.3f}\n'.format(
+            epoch, train_loss, tradeoff.train_time,  test_acc, eval_train_acc)
         with open(os.path.join(args.save_dir,"{}.txt".format(args.log_name)), "a") as log:
-            log.write('{}\n'.format(log_tmp))
+            log.write(log_tmp)
         print(log_tmp)
 
         if epoch > 0 and epoch % args.save_freq == 0:
