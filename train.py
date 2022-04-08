@@ -1,5 +1,5 @@
 import time
-
+from random import sample
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -13,10 +13,10 @@ from metrics import *
 from utils import *
 
 
-def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1):
+def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1, t_num=5):
 
     model.train()
-
+    t_total = len(t_models)
     start = time.time()
 
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -28,16 +28,20 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
         cls_loss = criterion(s_out, target)
         loss = cls_loss
         
-        if t_models:
+        if t_models and t_num > 0:
             t_outputs = None
-            frac = 1/len(t_models)
-            for t_model in t_models:
-                for param in t_model.parameters():
-                    param.requires_grad = False
-                if t_outputs is None:
-                    t_outputs = t_model(data) * frac
-                else:
-                    t_outputs += t_model(data) * frac
+            
+            # randomly sample a subset of teachers per batch
+            sel_idx = set(sample(range(t_total), t_num))
+            frac = 1 / t_num
+            for i, t_model in enumerate(t_models):
+                if i in sel_idx:
+                    for param in t_model.parameters():
+                        param.requires_grad = False
+                    if t_outputs is None:
+                        t_outputs = t_model(data) * frac
+                    else:
+                        t_outputs += t_model(data) * frac
 #                 loss += st_criterion(s_out, t_model(data)) * lambda_kd
             loss += st_criterion(s_out, t_outputs) * lambda_kd
     
