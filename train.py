@@ -11,7 +11,6 @@ import torchvision.datasets as datasets
 from models import *
 from metrics import *
 from utils import *
-from random import choice
 
 def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1, avg_t=True):
 
@@ -41,10 +40,14 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
                         t_outputs += t_model(data) * frac
     #                 loss += st_criterion(s_out, t_model(data)) * lambda_kd
             else:
-                rand_t_model = choice(t_models)
-                for param in rand_t_model.parameters():
-                    param.requires_grad = False
-                t_outputs = rand_t_model(data)
+#                 weights = np.random.dirichlet(np.ones(len(t_models)),size=1)
+                weights = np.random.rand(len(t_models))
+                weights = weights / np.sum(weights)
+                for idx, t_model in enumerate(t_models):
+                    for param in t_model.parameters():
+                        param.requires_grad = False
+                    t_outputs += t_model(data) * weights[idx]
+                    
             loss += st_criterion(s_out, t_outputs) * lambda_kd
     
         loss.backward()
