@@ -174,7 +174,7 @@ def main(args, best_prec1):
 
         if epoch <= args.kd_epochs_first and epoch % args.kd_epochs_every == 0:
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, 
-                                           st_criterion, teacher_model, args.lambda_kd, kd_loss_weight)
+                                           st_criterion, teacher_model, args.lambda_kd, kd_loss_weight, kd_prop=args.kd_prop)
         else:
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq)
 
