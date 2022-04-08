@@ -8,13 +8,14 @@ import torch.optim
 import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
+import numpy as np
 from models import *
 from metrics import *
 from utils import *
 
 
 def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
-          st_criterion=None, t_models=None, lambda_kd=1, kd_loss_weight=1):
+          st_criterion=None, t_models=None, lambda_kd=1, kd_loss_weight=0.5, kd_prop=1):
 
     model.train()
 
@@ -28,8 +29,8 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq,
         s_out = model(data)
         cls_loss = criterion(s_out, target)
         # loss = cls_loss
-        
-        if t_models:
+
+        if np.random.uniform() < kd_prop and t_models:
             t_outputs = None
             frac = 1/len(t_models)
             for t_model in t_models:
