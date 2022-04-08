@@ -54,6 +54,7 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
 parser.add_argument('--teacher', default='', type=str, metavar='PATH',
                     help='path to the teacher model (default: none)')
 parser.add_argument('--teacher_num', default=5, type=int, help='teacher_num')
+parser.add_argument('--tr', '--teacher_random', type=int, default=5, help='random sample # teachers per batch')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true',
@@ -123,7 +124,8 @@ def main(args, best_prec1):
                     checkpoint = torch.load(os.path.join(args.teacher, path))
                     one_model.load_state_dict(checkpoint['state_dict'])
                     teacher_model.append(one_model)
-            print('Using {} teachers, they are {}'.format(len(teacher_model), paths[:args.teacher_num]))
+            print('Total {} teachers, they are {}, later we will subsample {} teachers per batch'.format(len(teacher_model), paths[:args.teacher_num], args.tr))
+        assert args.tr <= len(teacher_model), 'random sample # teachers per batch is larger than teacher total number!'
     else:
         teacher_model = None
         st_criterion = None
@@ -171,7 +173,7 @@ def main(args, best_prec1):
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
 
         if epoch <= args.kd_epochs_first and epoch % args.kd_epochs_every == 0:
-            train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model, args.lambda_kd, args.take_avg_teacher)
+            train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model, args.lambda_kd, args.tr, args.take_avg_teacher)
         else:
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq)
 
