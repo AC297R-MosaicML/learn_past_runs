@@ -70,7 +70,7 @@ parser.add_argument('--use-cuda', type=bool,  default=True, help='if use cuda') 
 parser.add_argument('--lambda_kd', type=float, default=1.0, help='trade-off parameter for kd loss')
 parser.add_argument('--kd_epochs_first', type=int, default=200, help='use kd for the first several epochs')
 parser.add_argument('--kd_epochs_every', type=int, default=1, help='use kd every x epochs')
-parser.add_argument('--random_weights', default=False, action='store_true', help='if assign random weights to teacher models')
+parser.add_argument('--random_weights', action='store_true', help='if assign random weights to teacher models')
 
 best_prec1 = 0
 

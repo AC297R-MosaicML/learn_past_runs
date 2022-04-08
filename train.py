@@ -15,11 +15,13 @@ import numpy as np
 
 def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1, t_num=5, random_weights=False):
     model.train()
+    if t_models:
+        t_total = len(t_models)
     start = time.time()
 
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
-        
+
         optimizer.zero_grad()
 
         s_out = model(data)
@@ -27,7 +29,6 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
         loss = cls_loss
         
         if t_models and t_num > 0:
-            t_total = len(t_models)
             t_outputs = None
             if random_weights is False:
                 # randomly sample a subset of teachers per batch
@@ -43,7 +44,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
                             t_outputs += t_model(data) * frac
             else:
 #                 weights = np.random.dirichlet(np.ones(len(t_models)),size=1)
-                weights = np.random.rand(len(t_models))
+                weights = np.random.rand(t_total)
                 weights = weights / np.sum(weights)
                 for idx, t_model in enumerate(t_models):
                     for param in t_model.parameters():
@@ -53,7 +54,6 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
                     else:
                         t_outputs += t_model(data) * weights[idx]
 
-#             loss += st_criterion(s_out, t_model(data)) * lambda_kd
             loss += st_criterion(s_out, t_outputs) * lambda_kd
     
         loss.backward()
