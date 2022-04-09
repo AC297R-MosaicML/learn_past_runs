@@ -43,6 +43,9 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq,
 #                 loss += st_criterion(s_out, t_model(data)) * lambda_kd
             loss = (kd_loss_weight*st_criterion(s_out, t_outputs) + 
                     (1-kd_loss_weight)*cls_loss)
+
+        else:
+            loss = cls_loss
     
         loss.backward()
         optimizer.step()
