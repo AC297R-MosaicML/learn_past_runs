@@ -15,7 +15,8 @@ from utils import *
 
 
 def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
-          st_criterion=None, t_models=None, lambda_kd=1, kd_loss_weight=0.5, kd_prop=1):
+          st_criterion=None, t_models=None, lambda_kd=1, kd_loss_weight=0.5, kd_prop=1,
+          kd_int=1):
 
     model.train()
 
@@ -30,7 +31,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq,
         cls_loss = criterion(s_out, target)
         # loss = cls_loss
 
-        if np.random.uniform() < kd_prop and t_models:
+        if batch_idx % kd_int == 0 and np.random.uniform() < kd_prop and t_models:
             t_outputs = None
             frac = 1/len(t_models)
             for t_model in t_models:

@@ -69,6 +69,7 @@ parser.add_argument('--lambda_kd', type=float, default=1.0, help='trade-off para
 parser.add_argument('--kd_epochs_first', type=int, default=200, help='use kd for the first several epochs')
 parser.add_argument('--kd_epochs_every', type=int, default=1, help='use kd every x epochs')
 parser.add_argument('--kd_prop', type=float, default=1., help='probabiltiy that a batch uses kd')
+parser.add_argument('--kd_int', type=int, default=1, help='interval for kd between batches')
 best_prec1 = 0
 
 
@@ -174,7 +175,8 @@ def main(args, best_prec1):
 
         if epoch <= args.kd_epochs_first and epoch % args.kd_epochs_every == 0:
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, 
-                                           st_criterion, teacher_model, args.lambda_kd, kd_loss_weight, kd_prop=args.kd_prop)
+                                           st_criterion, teacher_model, args.lambda_kd, kd_loss_weight, kd_prop=args.kd_prop,
+                                           kd_int=args.kd_int)
         else:
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq)
 
