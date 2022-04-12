@@ -70,6 +70,7 @@ parser.add_argument('--use-cuda', type=bool,  default=True, help='if use cuda') 
 parser.add_argument('--lambda_kd', type=float, default=1.0, help='trade-off parameter for kd loss')
 parser.add_argument('--kd_epochs_first', type=int, default=200, help='use kd for the first several epochs')
 parser.add_argument('--kd_epochs_every', type=int, default=1, help='use kd every x epochs')
+parser.add_argument('--loss_criterion', '-lc', default='MSE', help='loss function, passed as "criterion" for training loop')
 best_prec1 = 0
 
 
@@ -85,6 +86,12 @@ def main(args, best_prec1):
         num_classes = 10
     elif args.data.lower() == 'cifar100':
         num_classes = 100
+        
+    if args.loss_criterion.lower() == 'MSE':
+      crit = nn.MSELoss()
+    else:
+      print("=> Criterion not recognized: '{}', defaulting to MSE".format(args.loss_criterion))
+      crit = nn.MSELoss()
 
     model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
     model.to(device)
@@ -111,7 +118,7 @@ def main(args, best_prec1):
             checkpoint = torch.load(args.teacher)
             teacher_model.load_state_dict(checkpoint['state_dict'])
             teacher_model = [teacher_model]
-            st_criterion = nn.MSELoss().to(device)
+            st_criterion = crit.to(device)
         # is a folder, loading several teachers
         else:
             teacher_model = []
