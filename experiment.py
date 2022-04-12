@@ -87,11 +87,16 @@ def main(args, best_prec1):
     elif args.data.lower() == 'cifar100':
         num_classes = 100
         
-    if args.loss_criterion.lower() == 'MSE':
-      crit = nn.MSELoss()
+    if args.loss_criterion.lower() == 'mse':
+      crit = nn.MSELoss
+      stcrit = nn.MSELoss()
+    elif args.loss_criterion.lower() == "cross-entropy" or args.loss_criterion.lower() == "CE":
+      crit = nn.CrossEntropyLoss()
+      stcrit = nn.CrossEntropyLoss()
     else:
       print("=> Criterion not recognized: '{}', defaulting to MSE".format(args.loss_criterion))
       crit = nn.MSELoss()
+      stcrit = nn.MSELoss()
 
     model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
     model.to(device)
@@ -155,7 +160,7 @@ def main(args, best_prec1):
         num_workers=args.workers, pin_memory=True)
 
     # define loss function (criterion) and optimizer
-    criterion = nn.CrossEntropyLoss().to(device)
+    criterion = crit.to(device)
     
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
