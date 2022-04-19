@@ -13,10 +13,10 @@ from metrics import *
 from utils import *
 
 
-def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1, t_num=5):
+def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1, t_num=5, input_preprocess = None):
 
     model.train()
-    t_total = len(t_models)
+    t_total = len(t_models) if t_models else None
     start = time.time()
 
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -24,10 +24,19 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
         
         optimizer.zero_grad()
 
+
         s_out = model(data)
         cls_loss = criterion(s_out, target)
         loss = cls_loss
-        
+
+
+        s_out_processed = input_preprocess(s_out) if input_preprocess else s_out
+
+        # if batch_idx < 5:
+        #   print(s_out)
+        #   print(input_preprocess)
+        #   print(s_out_processed)
+ 
         if t_models and t_num > 0:
             t_outputs = None
             
@@ -43,7 +52,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
                     else:
                         t_outputs += t_model(data) * frac
 #                 loss += st_criterion(s_out, t_model(data)) * lambda_kd
-            loss += st_criterion(s_out, t_outputs) * lambda_kd
+            loss += st_criterion(s_out_processed, t_outputs) * lambda_kd
     
         loss.backward()
         optimizer.step()

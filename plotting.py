@@ -100,16 +100,18 @@ def plot_tradeoff(paths, filename, acc_name='Test'):
     
 if __name__ == '__main__':
     paths = []
-    for i in range(1,6):
-        paths.append(f'0330/5teachers_0330_logs/t{i}_0330.txt')
+    paths.append(f'/content/drive/MyDrive/CGH_Dev/logs/test_save_dir/CGH20220414_0.txt')
+    # paths.append(f'/content/drive/MyDrive/5teachers_0330_logs/t5_0325.txt')
 
     datas = []
     for path in paths:
         datas.append(read_log(path))
 
-    avg_always = get_avg('0330','kd_always_0330_5t',3)
-    avg_first = get_avg('0330', 'kd_first_0330',3)
-    avg_every = get_avg('0330', 'kd_every_0330',3)
+    print(np.shape(datas))
+
+    # avg_always = get_avg('/content/drive/MyDrive/CGH_Dev/logs/test_save_dir','CGH20220414_0.txt',1)
+    # avg_first = get_avg('/content/drive/MyDrive/CGH_Dev/logs/test_save_dir','CGH20220414_0.txt',1)
+    # avg_every = get_avg('/content/drive/MyDrive/CGH_Dev/logs/test_save_dir','CGH20220414_0.txt',1)
 
 
     name = "Pastel2"
@@ -118,19 +120,28 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(8,6))
 
-    with plt.rc_context({"axes.prop_cycle" : plt.cycler("color", colors)}):
-        for i in range(len(datas)):
-            plt.plot(datas[i]['epoch'], datas[i]['train_acc'], label=f'run {i}', linewidth=2)
+    for i in range(len(datas)):
+      plt.plot(datas[i]['epoch'], datas[i]['test_acc'], label=f'test', linewidth=2)
 
-    plt.plot(avg_first['epoch'], avg_first['train_acc'], label='kd_mixup_first20(avg.)', color='r')
-    plt.plot(avg_always['epoch'], avg_always['train_acc'], label='kd_mixup_always(avg.)', color='b')
-    plt.plot(avg_every['epoch'], avg_every['train_acc'], label='kd_mixup_every10(avg.)', color='g')
+    # plt.plot(avg_first['epoch'], avg_first['train_acc'], label='kd_mixup_first20(avg.)', color='r')
+    # plt.plot(avg_always['epoch'], avg_always['train_acc'], label='kd_mixup_always(avg.)', color='b')
+    # plt.plot(avg_every['epoch'], avg_every['train_acc'], label='kd_mixup_every10(avg.)', color='g')
 
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
     plt.xlabel('Epoch', fontsize=16)
-    plt.ylabel('Train Accuracy', fontsize=16)
+    plt.ylabel('Train/Test Accuracy', fontsize=16)
     plt.legend()
+
+    plt.savefig(
+        "../logs/imgs/cgh_kldiv_combined0" + "." + FORMAT, format=FORMAT, dpi=1200, bbox_inches="tight")
+
+    plt.xlim(100,145)
+    plt.savefig(
+        "../logs/imgs/cgh_kldiv_end_combined0" + "." + FORMAT, format=FORMAT, dpi=1200, bbox_inches="tight")
+
+
+
 
     
     

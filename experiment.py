@@ -70,7 +70,9 @@ parser.add_argument('--use-cuda', type=bool,  default=True, help='if use cuda') 
 parser.add_argument('--lambda_kd', type=float, default=1.0, help='trade-off parameter for kd loss')
 parser.add_argument('--kd_epochs_first', type=int, default=200, help='use kd for the first several epochs')
 parser.add_argument('--kd_epochs_every', type=int, default=1, help='use kd every x epochs')
-parser.add_argument('--loss_criterion', '-lc', default='MSE', help='loss function, passed as "criterion" for training loop')
+parser.add_argument('--loss_criterion', '-lc', default='CE', help='Ground Truth loss function, passed as "criterion" for training loop')
+parser.add_argument('--ST_criterion', '-stc', default='MSE', help='Student-Teacher loss function, passed as "st_criterion" for training loop')
+
 best_prec1 = 0
 
 
@@ -86,16 +88,26 @@ def main(args, best_prec1):
         num_classes = 10
     elif args.data.lower() == 'cifar100':
         num_classes = 100
+
+    input_preprocess = None
         
     if args.loss_criterion.lower() == 'mse':
-      crit = nn.MSELoss
-      stcrit = nn.MSELoss()
-    elif args.loss_criterion.lower() == "cross-entropy" or args.loss_criterion.lower() == "CE":
-      crit = nn.CrossEntropyLoss()
-      stcrit = nn.CrossEntropyLoss()
-    else:
-      print("=> Criterion not recognized: '{}', defaulting to MSE".format(args.loss_criterion))
       crit = nn.MSELoss()
+    elif args.loss_criterion.lower() == "cross-entropy" or args.loss_criterion.lower() == "ce":
+      crit = nn.CrossEntropyLoss()
+    else:
+      print("=> Criterion not recognized: '{}', defaulting to Cross-Entropy".format(args.loss_criterion))
+      crit = nn.CrossEntropyLoss()
+
+    if args.ST_criterion.lower() == 'mse':
+      stcrit = nn.MSELoss()
+    elif args.ST_criterion.lower() == "cross-entropy" or args.ST_criterion.lower() == "ce":
+      stcrit = nn.CrossEntropyLoss()
+    elif args.ST_criterion.lower() == "kl":
+      stcrit = nn.KLDivLoss(reduction = 'batchmean')
+      input_preprocess = nn.functional.softmax
+    else:
+      print("=> ST Criterion not recognized: '{}', defaulting to MSE".format(args.ST_criterion))
       stcrit = nn.MSELoss()
 
     model = torch.nn.DataParallel(models.__dict__[args.arch](num_classes=num_classes))
@@ -123,11 +135,11 @@ def main(args, best_prec1):
             checkpoint = torch.load(args.teacher)
             teacher_model.load_state_dict(checkpoint['state_dict'])
             teacher_model = [teacher_model]
-            st_criterion = crit.to(device)
+            st_criterion = stcrit.to(device)
         # is a folder, loading several teachers
         else:
             teacher_model = []
-            st_criterion = nn.MSELoss().to(device)
+            st_criterion = stcrit.to(device)
             paths = sorted(os.listdir(args.teacher))
             for i, path in enumerate(paths):
                 if i < args.teacher_num:
@@ -184,9 +196,9 @@ def main(args, best_prec1):
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
 
         if epoch <= args.kd_epochs_first and epoch % args.kd_epochs_every == 0:
-            train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model, args.lambda_kd, args.tr)
+            train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model, args.lambda_kd, args.tr, input_preprocess)
         else:
-            train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq)
+            train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, input_preprocess = input_preprocess)
 
         lr_scheduler.step()
 
