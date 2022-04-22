@@ -15,8 +15,7 @@ from utils import *
 
 
 def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
-          st_criterion=None, t_models=None, lambda_kd=1, kd_loss_weight=0.5, kd_prop=1,
-          kd_int=1):
+          st_criterion=None, t_models=None, lambda_kd=1, kd_prop=1, kd_int=1):
 
     model.train()
 
