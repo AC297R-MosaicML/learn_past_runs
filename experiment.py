@@ -187,9 +187,10 @@ def main(args, best_prec1):
 
         # remember best prec@1 and save checkpoint
         best_prec1 = max(test_acc, best_prec1)
-
-        log_tmp = 'Train Epoch: {} Loss: {:.6f} Total Training time: {:.2f} Test Accuracy: {:.3f} Train Accuracy: {:.3f}\n'.format(
-            epoch, train_loss, tradeoff.train_time,  test_acc, eval_train_acc)
+        
+        #updated to log epoch train time instead of total
+        log_tmp = 'Train Epoch: {} Loss: {:.6f} Epoch Time: {:.2f} Test Accuracy: {:.3f} Train Accuracy: {:.3f}\n'.format(
+            epoch, train_loss, train_time,  test_acc, eval_train_acc)
         with open(os.path.join(args.save_dir,"{}.txt".format(args.log_name)), "a") as log:
             log.write(log_tmp)
         print(log_tmp)
