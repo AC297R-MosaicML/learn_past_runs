@@ -14,7 +14,7 @@ import torch.nn.init as init
 from torch.autograd import Variable
 
 
-__all__ = ["ResNet", "resnet56"]
+__all__ = ["ResNet", "resnet56", "resnet110"]
 
 
 def _weights_init(m):
@@ -22,6 +22,7 @@ def _weights_init(m):
     #print(classname)
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
         init.kaiming_normal_(m.weight)
+
 
 class LambdaLayer(nn.Module):
     def __init__(self, lambd):
@@ -100,3 +101,7 @@ class ResNet(nn.Module):
 
 def resnet56(num_classes):
     return ResNet(BasicBlock, [9, 9, 9], num_classes=num_classes)
+
+
+def resnet110(num_classes):
+    return ResNet(BasicBlock, [18, 18, 18], num_classes=num_classes)
