@@ -159,8 +159,8 @@ def main(args, best_prec1):
 #     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
 #                                                         milestones=[100, 150], 
 #                                                         last_epoch=args.start_epoch - 1)
-    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.975)
-#     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
+    # lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.975)
+    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=2)
 
     if args.evaluate:
         validate(val_loader, model, criterion)
@@ -174,11 +174,11 @@ def main(args, best_prec1):
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
 
         if epoch <= args.kd_epochs_first and epoch % args.kd_epochs_every == 0:
-            train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model, args.lambda_kd, args.tr, args.random_weights)
+            train_loss, train_time = train(train_loader, model, criterion, optimizer, lr_scheduler, epoch, device, args.print_freq, st_criterion, teacher_model, args.lambda_kd, args.tr, args.random_weights)
         else:
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq)
 
-        lr_scheduler.step()
+        # lr_scheduler.step()
 
         # evaluate
         test_loss, test_acc = validate(val_loader, model, criterion, 'test data', device)

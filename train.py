@@ -13,7 +13,7 @@ from metrics import *
 from utils import *
 import numpy as np
 
-def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1, t_num=5, random_weights=False):
+def train(train_loader, model, criterion, optimizer, scheduler, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1, t_num=5, random_weights=False):
     model.train()
     if t_models:
         t_total = len(t_models)
@@ -58,6 +58,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
     
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
         if batch_idx % print_freq == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
