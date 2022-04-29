@@ -180,7 +180,7 @@ def main(args, best_prec1):
             schedule_check = False
         elif args.schedule == 2 and epoch < 180 and epoch > 20:
             schedule_check = False
-        elif args.schedule == 3 and epoch < 90 and epoch > 110:
+        elif args.schedule == 3 and (epoch < 90 or epoch > 110):
             schedule_check = False
         elif args.schedule == 4 and epoch < 180 and epoch > 20 and epoch % 10 != 0:
             schedule_check = False
