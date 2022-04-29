@@ -188,6 +188,8 @@ def main(args, best_prec1):
             schedule_check = False
         elif args.schedule == 6 and epoch > 20:
             schedule_check = False
+        elif args.schedule == 7 and epoch % 20 != 19 and epoch % 20 != 1:
+            schedule_check = False
 
         if epoch <= args.kd_epochs_first and epoch % args.kd_epochs_every == 0 and schedule_check:
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, 
