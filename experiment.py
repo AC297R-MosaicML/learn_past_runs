@@ -191,7 +191,7 @@ def main(args, best_prec1):
             schedule_check = False
         elif args.schedule == 7 and epoch % 20 != 19 and epoch % 20 != 0:
             schedule_check = False
-        elif args.schedule == 8 and epoch % 10 == 0:
+        elif args.schedule == 8 and epoch % 10 != 0:
             schedule_check = False
 
         if epoch <= args.kd_epochs_first and epoch % args.kd_epochs_every == 0 and schedule_check:
