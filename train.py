@@ -15,7 +15,7 @@ from utils import *
 
 
 def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
-          st_criterion=None, t_models=None, lambda_kd=1, kd_prop=1, kd_int=1):
+          st_criterion=None, t_models=None, lambda_kd=1, kd_prop=1, kd_int=1, sample=None):
 
     model.train()
 
@@ -31,15 +31,19 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq,
         # loss = cls_loss
 
         if batch_idx % kd_int == 0 and np.random.uniform() < kd_prop and t_models:
+            if not sample:
+                sample = len(t_models)
             t_outputs = None
-            frac = 1/len(t_models)
-            for t_model in t_models:
+            frac = 1/sample
+            selected_models = np.random.choice(range(len(t_models)), sample, replace=False)
+            for i, t_model in enumerate(t_models):
                 for param in t_model.parameters():
-                    param.requires_grad = False
-                if t_outputs is None:
-                    t_outputs = t_model(data) * frac
-                else:
-                    t_outputs += t_model(data) * frac
+                        param.requires_grad = False
+                if i in selected_models:
+                    if t_outputs is None:
+                        t_outputs = t_model(data) * frac
+                    else:
+                        t_outputs += t_model(data) * frac
 #                 loss += st_criterion(s_out, t_model(data)) * lambda_kd
             loss = st_criterion(s_out, t_outputs) + cls_loss
 
