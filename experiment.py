@@ -71,7 +71,7 @@ parser.add_argument('--kd_epochs_every', type=int, default=1, help='use kd every
 parser.add_argument('--kd_prop', type=float, default=1., help='probabiltiy that a batch uses kd')
 parser.add_argument('--kd_int', type=int, default=1, help='interval for kd between batches')
 parser.add_argument('--schedule', type=int, default=0, help='0=none, 1=last-20, 2=first+last-20, 3=middle-20, 4=2+every-10')
-parser.add_argument('--sample', type=int, default=5, help='number of teachers to sample')
+parser.add_argument('--sample', type=int, default=None, help='number of teachers to sample')
 best_prec1 = 0
 
 
