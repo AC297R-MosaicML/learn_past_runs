@@ -67,3 +67,51 @@ def train(train_loader, model, criterion, optimizer, epoch, device, print_freq, 
     end = time.time()
     
     return loss, end-start
+
+
+def train_masking(train_loader, model, criterion, optimizer, epoch, device, print_freq, st_criterion=None, t_models=None, lambda_kd=1, masking=False):
+    model.train()
+    if t_models:
+        t_total = len(t_models)
+    start = time.time()
+
+    for batch_idx, (data, target) in enumerate(train_loader):
+        data, target = data.to(device), target.to(device)
+
+        optimizer.zero_grad()
+
+        s_out = model(data)
+        cls_loss = criterion(s_out, target)
+        loss = cls_loss
+        
+        if t_models:
+            t_outputs = None
+            t_masks = None
+            for i, t_model in enumerate(t_models):
+                for param in t_model.parameters():
+                    param.requires_grad = False
+                if t_outputs is None:
+                    t_output = t_model(data)
+                    print(t_output.shape)
+                    t_mask = masking["teacher_"+str(i)].unsqueeze(1)
+                    t_outputs = t_output.masked_fill(~t_mask, 0) # mask bad as 0
+                    t_masks = t_mask.int()
+                else:
+                    t_mask = masking["teacher_"+str(i)].unsqueeze(1)
+                    t_outputs += t_output.masked_fill(~t_mask, 0)
+                    t_masks += t_mask.int()
+            avg_frac = 1 / t_masks
+            t_outputs = t_outputs * avg_frac
+            loss += st_criterion(s_out, t_outputs) * lambda_kd
+    
+        loss.backward()
+        optimizer.step()
+
+        if batch_idx % print_freq == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(data), len(train_loader.dataset),
+                100. * batch_idx / len(train_loader), loss.item()))
+
+    end = time.time()
+    
+    return loss, end-start

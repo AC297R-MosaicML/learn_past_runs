@@ -18,8 +18,8 @@ import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import models
-from train import train
-from eval import validate
+from train import train, train_masking
+from eval import validate, caching
 from dataset import load_dataset
 from utils import Tradeoff
 
@@ -71,6 +71,8 @@ parser.add_argument('--lambda_kd', type=float, default=1.0, help='trade-off para
 parser.add_argument('--kd_epochs_first', type=int, default=200, help='use kd for the first several epochs')
 parser.add_argument('--kd_epochs_every', type=int, default=1, help='use kd every x epochs')
 parser.add_argument('--random_weights', action='store_true', help='if assign random weights to teacher models')
+parser.add_argument('--mask', type=bool,  default=False, help='if research on good/bad')
+
 
 best_prec1 = 0
 
@@ -127,6 +129,10 @@ def main(args, best_prec1):
                     teacher_model.append(one_model)
             print('Total {} teachers, they are {}, later we will subsample {} teachers per batch'.format(len(teacher_model), paths[:args.teacher_num], args.tr))
         assert args.tr <= len(teacher_model), 'random sample # teachers per batch is larger than teacher total number!'
+        if args.mask:
+            t_masks = {}
+            for i in range(len(teacher_model)):
+                t_masks["teacher_"+str(i)] = []
     else:
         teacher_model = None
         st_criterion = None
@@ -167,14 +173,24 @@ def main(args, best_prec1):
         return
 
     tradeoff = Tradeoff()
-    
+    if teacher_model and args.mask:
+        model_masks = caching(eval_train, teacher_model, 'train data', device, model_masks)
+
     for epoch in range(args.start_epoch, args.epochs + 1):
 
         # train for one epoch
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
 
         if epoch <= args.kd_epochs_first and epoch % args.kd_epochs_every == 0:
-            train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq, st_criterion, teacher_model, args.lambda_kd, args.tr, args.random_weights)
+            if args.mask:
+                train_loss, train_time = train_masking(train_loader, model, criterion, optimizer, 
+                                           epoch, device, args.print_freq, st_criterion, 
+                                           teacher_model, args.lambda_kd, model_masks)
+            else:
+                train_loss, train_time = train(train_loader, model, criterion, optimizer, 
+                                           epoch, device, args.print_freq, st_criterion, 
+                                           teacher_model, args.lambda_kd, args.tr, 
+                                           args.random_weights)
         else:
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq)
 
