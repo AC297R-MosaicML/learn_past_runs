@@ -34,8 +34,8 @@ def validate(val_loader, model, criterion, set_name, device):
     return test_loss, acc
 
 
-def caching(val_loader, teacher_models, set_name, device, model_masks):
-    print(f'Cache teachers output on {set_name}')
+def cache_mask(val_loader, teacher_models, set_name, device, model_masks):
+    print(f'Cache teachers good/bad output mask on {set_name}')
     for idx, model in enumerate(teacher_models):
         model.eval()
         test_loss = 0

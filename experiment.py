@@ -19,7 +19,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import models
 from train import train, train_masking
-from eval import validate, caching
+from eval import validate, cache_mask
 from dataset import load_dataset
 from utils import Tradeoff
 
@@ -174,7 +174,7 @@ def main(args, best_prec1):
 
     tradeoff = Tradeoff()
     if teacher_model and args.mask:
-        model_masks = caching(eval_train, teacher_model, 'train data', device, model_masks)
+        t_masks = cache_mask(eval_train, teacher_model, 'train data', device, t_masks)
 
     for epoch in range(args.start_epoch, args.epochs + 1):
 
@@ -185,7 +185,7 @@ def main(args, best_prec1):
             if args.mask:
                 train_loss, train_time = train_masking(train_loader, model, criterion, optimizer, 
                                            epoch, device, args.print_freq, st_criterion, 
-                                           teacher_model, args.lambda_kd, model_masks)
+                                           teacher_model, args.lambda_kd, t_masks)
             else:
                 train_loss, train_time = train(train_loader, model, criterion, optimizer, 
                                            epoch, device, args.print_freq, st_criterion, 

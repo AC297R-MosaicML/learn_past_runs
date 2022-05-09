@@ -3,6 +3,7 @@ from random import sample
 import torch
 import torch.nn as nn
 import torch.nn.parallel
+import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
@@ -90,19 +91,28 @@ def train_masking(train_loader, model, criterion, optimizer, epoch, device, prin
             for i, t_model in enumerate(t_models):
                 for param in t_model.parameters():
                     param.requires_grad = False
-                if t_outputs is None:
-                    t_output = t_model(data)
-                    print(t_output.shape)
-                    t_mask = masking["teacher_"+str(i)].unsqueeze(1)
+                t_output = t_model(data)
+                t_mask = masking["teacher_"+str(i)][batch_idx].unsqueeze(1)
+                if t_outputs is None: 
                     t_outputs = t_output.masked_fill(~t_mask, 0) # mask bad as 0
                     t_masks = t_mask.int()
                 else:
-                    t_mask = masking["teacher_"+str(i)].unsqueeze(1)
                     t_outputs += t_output.masked_fill(~t_mask, 0)
                     t_masks += t_mask.int()
+            
+            t_masks = torch.squeeze(t_masks)
+            zero_idx = (t_masks==0)
             avg_frac = 1 / t_masks
-            t_outputs = t_outputs * avg_frac
-            loss += st_criterion(s_out, t_outputs) * lambda_kd
+            if zero_idx.any():
+                print(f'on batch_idx {batch_idx}, teachers all wrong')
+                avg_frac[zero_idx] = 0
+                t_outputs = t_outputs * avg_frac.unsqueeze(1)
+                t_outputs += F.one_hot(target, num_classes=100) * zero_idx.unsqueeze(1).int()
+                loss += st_criterion(s_out, t_outputs) * lambda_kd
+            else:
+                t_outputs = t_outputs * avg_frac.unsqueeze(1)
+                loss += st_criterion(s_out, t_outputs) * lambda_kd
+    
     
         loss.backward()
         optimizer.step()
@@ -113,5 +123,5 @@ def train_masking(train_loader, model, criterion, optimizer, epoch, device, prin
                 100. * batch_idx / len(train_loader), loss.item()))
 
     end = time.time()
-    
+    print('return loss:', loss.item())
     return loss, end-start
