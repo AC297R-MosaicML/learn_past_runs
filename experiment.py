@@ -155,12 +155,20 @@ def main(args, best_prec1):
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
-
+#     print('initial: {:.5e}'.format(optimizer.param_groups[0]['initial_lr']))
 #     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
-#                                                         milestones=[100, 150], 
-#                                                         last_epoch=args.start_epoch - 1)
-    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.975)
+#                                                         milestones=[60,120,160], gamma=0.2)
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
+                                                    milestones=[80,120], last_epoch=args.start_epoch - 1)
+#     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.975)
 #     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
+
+    if args.arch in ['resnet1202', 'resnet110']:
+        # for resnet1202 original paper uses lr=0.01 for first 400 minibatches for warm-up
+        # then switch back. In this setup it will correspond for first epoch.
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = args.lr*0.1
+    
 
     if args.evaluate:
         validate(val_loader, model, criterion)
@@ -169,7 +177,6 @@ def main(args, best_prec1):
     tradeoff = Tradeoff()
     
     for epoch in range(args.start_epoch, args.epochs + 1):
-
         # train for one epoch
         print('current lr {:.5e}'.format(optimizer.param_groups[0]['lr']))
 
@@ -179,6 +186,11 @@ def main(args, best_prec1):
             train_loss, train_time = train(train_loader, model, criterion, optimizer, epoch, device, args.print_freq)
 
         lr_scheduler.step()
+        
+        # switch back
+        if epoch == 0 and args.arch in ['resnet1202', 'resnet110']:
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = args.lr
 
         # evaluate
         test_loss, test_acc = validate(val_loader, model, criterion, 'test data', device)
